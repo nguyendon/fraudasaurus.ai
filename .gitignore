@@ -1,0 +1,34 @@
+# Data (too large / sensitive for git)
+data/
+*.csv
+*.xlsx
+*.parquet
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+Session.vim
+
+# OS
+.DS_Store
+
+# Output (regenerable)
+output/figures/*.png
+output/figures/*.html
+
+# Archives
+*.tar.gz
+*.zip
