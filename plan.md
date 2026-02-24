@@ -6,105 +6,272 @@ Jack Henry DevCon 2026 hackathon challenge: identify fraud in ARFI's data, find 
 
 The prompt hints at these fraud types: **account takeover, dormant account abuse, high-risk digital actions, structuring, and kiting**. CarMeg uses social engineering, knows regulatory limits ($10k CTR threshold), and targets slow-to-notice clients.
 
-## Phase 1: Extract & Profile Data
+---
 
-Run `src/extract.py` to pull all tables to local parquet. Fix the partitioned `user_activity_fct` table (needs date filter). Skip `ip_geo` initially (11M rows, reference only — join in BQ as needed).
+## Findings
 
-**Files:** `src/extract.py` (already written)
+### Finding 1: Structuring — $7,980 Repeat Transfers
 
-## Phase 2: Run Fraud Detection Queries
+**The clearest fraud signal in the dataset.** Six accounts making identical $7,980 transfers (just under the $10k CTR threshold) repeatedly over 18+ months.
 
-Run these 5 analyses as SQL against BigQuery. Each targets a specific fraud type from the prompt.
+| AccountId | Total $7,980 Txns | Days Active | Total Moved | Member # |
+|---|---|---|---|---|
+| 8d857485... | 351 | 183 | $2,800,980 | 39903 |
+| db903a36... | 315 | 174 | $2,513,700 | 7000 |
+| 4d847cfd... | 291 | 161 | $2,322,180 | 33250 |
+| cb9e5eca... | 277 | 154 | $2,210,460 | (no member #) |
+| bd4f341d... | 260 | 141 | $2,074,800 | (no member #) |
+| 6e86aaaa... | 253 | 135 | $2,018,940 | 39903 |
 
-### Analysis 1: Structuring Detection
+**Pattern:** Exactly $7,980 x 4-5 per day = $31,920-$39,900/day. Always under $10k per transaction. Running since April 2024. Some memos reference "DEPOSIT AT ATM... JLASTNAME TX".
 
-Transactions just under $10,000 (the CTR reporting threshold). CarMeg has "an acute awareness of regulatory limits."
+**Users behind these accounts:**
 
-- Find accounts with multiple cash-like transactions between $3,000-$9,999 within short windows
-- Flag accounts where daily/weekly totals exceed $10k but no single transaction does
-- Look at BannoType and Memo fields for cash deposit/withdrawal patterns
+| Username | Name | Email | Member # |
+|---|---|---|---|
+| marielong | MARIE LONG | kwohlschlegel@jackhenry.com | 39903 |
+| xroguex | ANNA MARIE | mbannister@symitar.com | 7000 |
+| iloveroe | LULA ROE | mbannister@jackhenry.com | 33250 |
+| (no username) | Koral Wohlschlegel | kwohlschlegel@jackhenry.com | 39903 |
 
-### Analysis 2: Account Takeover
+### Finding 2: CarMeg SanDiego = Meg Bannister
 
-Login anomalies + profile changes + unusual transactions in sequence.
+**CarMeg = Car + Meg. The hackathon organizer IS the villain.**
 
-- Failed login attempts followed by successful ones (login_attempts_fct, result_id patterns)
-- Logins from new/unusual IPs (geo-shift detection via ip_geo join)
-- Profile changes (user_edits_fct) shortly before or after login anomalies
-- New scheduled transfers or external transfers created after suspicious logins
+Meg Bannister has **11 user accounts** registered under various mbannister@ emails, using aliases like LULA ROE, ANNA MARIE, GREGORY HOUSE, and operating under usernames including `ilovemlms`, `iloveroe`, `xroguex`, `lularoe`, `megatoptimus`, `studentmeg`, `megatbusybee`, and `ghouse`.
 
-### Analysis 3: Dormant Account Abuse
+Key evidence:
+- Multiple accounts tied to `mbannister@jackhenry.com`, `mbannister@symitar.com`, `mbannister@gMAL.com`
+- The "LULA ROE" accounts are doing the $7,980 structuring
+- `ilovemlms` had 25 failed logins (result_id=2) from 5 different IPs — brute force / credential stuffing pattern
+- Account `A3ZXNHPWONQ6` created Nov 2025 — random-looking username, likely automated
+- "Lula Local" created Jan 2026 — still creating new accounts
 
-CarMeg "identifies slow-to-notice clients."
+### Finding 3: Account Takeover Signals
 
-- Find accounts with long inactivity gaps (symitar.account_v1_raw.lastfmdate) followed by sudden transaction bursts
-- Cross-reference with login_attempts to see if dormant accounts suddenly get digital access
-- Check if new EFTs or external accounts were added to long-dormant members
+**Top suspicious login patterns:**
 
-### Analysis 4: Check Kiting
+| Username | Total Attempts | Failed | Distinct IPs | Notes |
+|---|---|---|---|---|
+| bannowanda1 | 151 | 59 | 12 | 39% failure rate, many IPs |
+| ilovemlms | 31 | 25 | 5 | 81% failure rate — brute force |
+| brandygalloway06@yahoo.com | 14 | 14 | 1 | 100% fail, rapid-fire (2 min window) |
+| jessica | 6 | 6 | 6 | Every attempt from different IP |
+| mjones1051 | 5 | 5 | 1 | All failures in 3 minutes |
 
-Moving money between accounts to exploit float.
+`bannowanda1` is particularly interesting: registered as JAMES B EVANS but email is `mposkey@jackhenry.com` — name doesn't match the email.
 
-- Rapid check deposits followed by immediate withdrawals before clearing
-- Accounts with high NSF counts (nsfmonthlycount fields in account_v1_raw)
-- Round-trip transfers between related accounts (same household via household_raw)
-- RDC deposits (rdc_deposits_fct) with subsequent fast withdrawals
+`wandaa1` / `Wandaa1` (same person WANDA ADOMYETZ) logs in from **25 distinct IPs** including international-looking addresses.
 
-### Analysis 5: Find CarMeg SanDiego
+### Finding 4: Dormant Account Abuse
 
-Cross-reference all anomalies to find the common thread.
+Two Symitar accounts with `lastfmdate` before 2020 (dormant in core) still show active Banno transactions:
 
-- Which user/account appears across multiple fraud signals?
-- Look for accounts touching 2+ fraud categories (structuring AND takeover, etc.)
-- Check for any name/memo fields containing hints ("CarMeg", "SanDiego", camelCase references)
-- Look at user_demographic_details_fct for unusual patterns
-- Check comment_raw for fraud team notes about suspicious members
+| Member # | Last Core Activity | Banno Txn Count | Banno Total | Banno Date Range |
+|---|---|---|---|---|
+| 0000000006 | 2012-10-26 | 3,120 | $4,094,081 | 2012-02 to 2024-03 |
+| 0000034996 | 2019-10-01 | 1,113 | $145,736 | 2022-12 to 2024-03 |
 
-## Phase 3: Build Detection Script
+Member 6 is especially suspicious: dormant since 2012 in Symitar but $4M in digital transactions.
 
-Write `src/detect.py` — a Python script that runs each analysis and outputs flagged accounts with a risk score.
+### Finding 5: Login Result Codes
+
+| ID | Name | Description |
+|---|---|---|
+| 1 | (success) | Successful login |
+| 2 | (failure) | Failed login |
+| 4 | Dormant Account | User has a dormant account |
+| 7 | No Valid Account | No valid accounts found |
+| 10 | Service Unavailable | Login during outage |
+| 11 | Customer Not Found | Customer not in system |
+| 14 | UnknownIp | Login from unknown IP (NetTeller Cash Mgmt) |
+
+### Finding 6: NSF / Kiting Indicators
+
+All high-NSF accounts show `nsf_6mo_total = 183` and `nsf_12mo_total = 365` — this appears to be system default/max values on old accounts rather than actual kiting. Most have `lastfmdate = 1995-01-27`. Real kiting signal would need to come from cross-referencing rapid deposits + withdrawals in `transactions_fct`.
+
+---
+
+## Problem Statement
+
+"How can ARFI automatically detect and interrupt multi-channel fraud — including structuring, account takeover, and dormant account abuse — using the transaction and login data they already collect?"
+
+---
+
+## Proposed Automated Detection System
+
+### Overview
+
+A scheduled detection pipeline that runs against Banno and Symitar data in BigQuery, scoring every account against a set of rule-based detectors. No ML black boxes — every rule is auditable and explainable, which matters for BSA/AML compliance and CISO sign-off.
+
+### Architecture
 
 ```
-Input:  BigQuery tables (via query) or local parquet files
-Output: CSV/JSON of flagged accounts with:
-  - account_id / user_id
-  - fraud_type (structuring, takeover, dormant, kiting)
-  - risk_score (0-100)
-  - evidence (list of specific transactions/events)
-  - recommended_action
+BigQuery (Banno + Symitar data)
+        |
+        v
+  Scheduled SQL Queries (daily or near-real-time)
+        |
+        v
+  Detector Modules (one per fraud type)
+        |
+        v
+  Risk Scoring Engine (combine signals, weight, deduplicate)
+        |
+        v
+  Alert Output (tiered: critical / high / medium / low)
+        |
+        v
+  Fraud Team Dashboard + Case Management
 ```
 
-## Phase 4: Propose the Solution
+### Detector 1: Structuring
 
-Frame it as a practical, implementable system ARFI could actually deploy:
+**What it catches:** Accounts breaking large sums into sub-$10k transactions to avoid CTR filing.
 
-1. **Problem Statement:** "How can ARFI detect and interrupt multi-channel fraud — including structuring, account takeover, and dormant account abuse — before funds leave the institution?"
+**Rules:**
+1. **Repeating amount detector** — Flag any account that makes 3+ transactions of the exact same dollar amount (within $0.01) in a 7-day window where that amount is between $3,000 and $9,999. This catches the $7,980 pattern directly.
+2. **Daily aggregation detector** — For each account, sum all cash-like transactions (deposits, withdrawals, transfers) per calendar day. Flag if the daily total exceeds $10,000 but no single transaction does.
+3. **Rolling window detector** — Same as above but across a rolling 3-day and 7-day window. Structurers who spread across days get caught here.
+4. **Round number avoidance** — Flag transactions at amounts like $9,900, $9,500, $8,000, $7,980, $7,500 that repeat. Legitimate transactions rarely land on the same amount repeatedly.
 
-2. **Solution: Real-time fraud scoring pipeline**
-   - Ingest transactions and login events as they happen
-   - Score each event against rule-based detectors (structuring thresholds, geo-anomaly, dormancy windows)
-   - Generate alerts with priority tiers (investigate immediately / review within 24h / flag for audit)
-   - Dashboard showing flagged accounts with evidence trail
+**Thresholds (tunable):**
+- Single amount repeats: >= 3 times in 7 days at $3k-$9,999 → HIGH
+- Daily sub-$10k total > $10k: → HIGH
+- Weekly sub-$10k total > $25k: → CRITICAL
+- Same dollar amount > 10 times in 30 days: → CRITICAL
 
-3. **Why it's feasible:**
-   - Uses data ARFI already has (Banno + Symitar)
-   - Rule-based first (no ML black box, auditable, CISO-friendly)
-   - Can run as scheduled BigQuery queries or lightweight Python service
-   - Low barrier: SQL + Python, tools they already use
+**Why it works on this data:** The $7,980 pattern would be flagged on day one. Six accounts doing identical $7,980 transfers 4x/day would immediately trigger both the repeating-amount and daily-aggregation rules at CRITICAL severity. The system would have caught this in April 2024 instead of letting $13.9M flow through.
 
-## Phase 5: Build Submission
+### Detector 2: Account Takeover
 
-Create a clear writeup with:
-- Problem statement
-- Data evidence (specific account numbers, transaction IDs, amounts)
-- Detection methodology
-- Proposed solution architecture
-- Demo: run the detector, show flagged results
+**What it catches:** Unauthorized access to existing member accounts via credential stuffing, brute force, or social engineering.
 
-## Execution Order
+**Rules:**
+1. **Brute force detector** — Flag usernames with a failure rate > 50% over any 24-hour window, or > 5 consecutive failures.
+2. **IP velocity detector** — Flag usernames that log in from > 3 distinct IPs in a 7-day window (excluding known VPN/mobile ranges if available).
+3. **Geo-impossible travel** — Join `login_attempts_fct.client_ip` with `ip_geo.ip_to_city`. Flag if the same username logs in from two cities > 500 miles apart within 1 hour.
+4. **Post-login behavior change** — After a login from a new IP, flag if the user immediately creates a new scheduled transfer, adds an external account, or changes profile details. These are high-risk actions from an unrecognized device.
+5. **Name/email mismatch** — Flag accounts where the registered first/last name doesn't match the email prefix (e.g., JAMES EVANS on `mposkey@` email).
 
-1. Extract data (fix partition issue in extract.py, run extract)
-2. Run the 5 analysis queries against BigQuery
-3. Build `src/detect.py` with the fraud detectors
-4. Identify CarMeg and document evidence
-5. Write up findings and solution proposal
+**Thresholds:**
+- > 5 failures in 5 minutes from one IP → CRITICAL (active brute force)
+- > 50% failure rate over 24h → HIGH
+- Login from > 5 distinct IPs in 30 days → MEDIUM
+- Geo-impossible travel → CRITICAL
+- New external transfer within 1 hour of new-IP login → HIGH
+
+**Why it works on this data:** `bannowanda1` (59 failures, 12 IPs) and `ilovemlms` (25 failures, 5 IPs) would both trigger immediately. `brandygalloway06@yahoo.com` (14 failures in 2 minutes) would trigger the brute force rule at CRITICAL. `jessica` (6 IPs, 6 attempts, all failures) would trigger geo-velocity.
+
+### Detector 3: Dormant Account Abuse
+
+**What it catches:** Accounts that have been inactive in core banking but suddenly show digital activity — a sign that someone has gained unauthorized access to an account whose real owner isn't watching.
+
+**Rules:**
+1. **Core-digital gap detector** — Compare `symitar.account_v1_raw.lastfmdate` with the latest Banno transaction date for the same member. Flag if core has been dormant > 12 months but digital transactions exist within the last 90 days.
+2. **Reactivation spike** — Flag accounts that go from 0 transactions in a 6-month window to > 5 transactions in a 7-day window.
+3. **Dormant login detector** — Use `login_results_deref` result_id=4 ("Dormant Account"). Any login attempt against a dormant account is suspicious. Cross-reference with subsequent successful logins on the same or related account.
+4. **New digital enrollment on old account** — Flag when a Banno user is linked (via `user_member_number_associations_fct`) to a Symitar account that was opened > 5 years ago but the Banno user was created in the last 90 days.
+
+**Thresholds:**
+- Core dormant > 2 years + any digital activity → HIGH
+- Core dormant > 5 years + digital activity > $1,000 → CRITICAL
+- New Banno user on account opened > 5 years ago → HIGH
+- Dormant login attempt (result_id=4) → MEDIUM
+
+**Why it works on this data:** Member #6 (dormant since 2012, $4M in digital transactions) would trigger at CRITICAL severity immediately. Member #34996 (dormant since 2019, $145k digital) would trigger at HIGH.
+
+### Detector 4: Multi-Identity / Synthetic Identity
+
+**What it catches:** One person operating multiple accounts under different names — what CarMeg was doing.
+
+**Rules:**
+1. **Email clustering** — Group all users by email domain + prefix. Flag when the same email (or base email with variations like `mbannister@jackhenry.com` vs `mbannister@symitar.com` vs `mbannister@gMAL.com`) is linked to > 2 user accounts with different names.
+2. **Shared-device fingerprint** — Flag when multiple usernames log in from the same IP within the same session window (< 30 minutes).
+3. **Account creation velocity** — Flag email addresses associated with > 3 new account creations in a 12-month period.
+4. **Cross-account money flow** — Flag when money moves between accounts owned by users who share an email or IP. This catches self-dealing and layering.
+
+**Thresholds:**
+- Same email base, > 2 user accounts, different names → HIGH
+- Same email, > 5 accounts → CRITICAL
+- > 3 accounts created in 12 months from same email → HIGH
+- Money flowing between accounts sharing an email/IP → CRITICAL
+
+**Why it works on this data:** CarMeg's 11 accounts across 3 email variants with 6+ different names would trigger at CRITICAL on every rule. The cross-account $7,980 transfers between her own accounts would also light up the cross-account money flow rule.
+
+### Risk Scoring
+
+Each detector produces alerts with a severity. The scoring engine combines them:
+
+| Severity | Points |
+|---|---|
+| CRITICAL | 40 |
+| HIGH | 25 |
+| MEDIUM | 10 |
+| LOW | 5 |
+
+An account's **risk score** = sum of all active alert points, capped at 100. Accounts hitting multiple detectors get compounding scores:
+
+- CarMeg's accounts: structuring (CRITICAL, 40) + multi-identity (CRITICAL, 40) + account takeover signals (HIGH, 25) = **100** (capped)
+- Member #6: dormant abuse (CRITICAL, 40) = **40**
+- bannowanda1: brute force (CRITICAL, 40) + IP velocity (HIGH, 25) = **65**
+
+### Alert Tiers and Recommended Actions
+
+| Score | Tier | Action |
+|---|---|---|
+| 80-100 | CRITICAL | Freeze account immediately, notify BSA officer, file SAR |
+| 50-79 | HIGH | Restrict digital access, require in-branch verification within 24h |
+| 25-49 | MEDIUM | Flag for fraud team review within 48h |
+| 1-24 | LOW | Add to monitoring watchlist, review at next audit cycle |
+
+### Implementation
+
+**Option A: Scheduled BigQuery SQL (simplest, recommended for ARFI)**
+
+Run each detector as a scheduled BigQuery query (daily at minimum, hourly if possible). Output to a `fraud_alerts` table. Build a simple dashboard (Looker Studio, free with BigQuery) on top.
+
+- Zero new infrastructure
+- Uses data ARFI already has in BigQuery
+- SQL is auditable — compliance team can read and approve every rule
+- Add/tune rules by editing SQL, no code deployment needed
+- Cost: effectively free (BigQuery on-demand pricing, small data volume)
+
+**Option B: Python service (more flexible, needed for real-time)**
+
+Run `src/detect.py` as a scheduled job or event-driven service. Same rules as SQL but with the ability to:
+- Send email/Slack alerts in real time
+- Maintain state (e.g., rolling windows, IP history per user)
+- Integrate with case management or ticketing
+- Add ML scoring later as a second layer
+
+**Option C: Hybrid (best of both)**
+
+Use BigQuery scheduled queries for batch detection (daily). Use a lightweight Python Cloud Function triggered on new login events for real-time account takeover detection. Both feed into the same `fraud_alerts` table and dashboard.
+
+### What This Would Have Caught
+
+| Fraud | When Detected | How Long It Ran | Amount Prevented |
+|---|---|---|---|
+| $7,980 structuring | April 2024 (day 1) | 18+ months undetected | Up to $13.9M |
+| CarMeg multi-identity | First duplicate account creation | Years of operation | Full exposure |
+| Member #6 dormant abuse | First digital txn post-dormancy | 12+ years gap | Up to $4M |
+| bannowanda1 brute force | First 5-failure burst | Months of attempts | Account compromise |
+
+---
+
+## SQL Scripts
+
+All detection queries saved in `sql/` directory:
+- `sql/00_reference.sql` — Reference lookups
+- `sql/01_structuring_detection.sql` — Structuring pattern queries
+- `sql/02_account_takeover.sql` — Login anomaly queries
+- `sql/03_dormant_account_abuse.sql` — Dormant account queries
+- `sql/04_kiting_nsf.sql` — NSF/kiting queries
+- `sql/05_find_carmeg.sql` — CarMeg identity queries
+
+## Next Steps
+
+1. Build `src/detect.py` — automated detection script that runs all detectors and outputs scored alerts
+2. Create visualizations — structuring timeline, CarMeg account network graph, login anomaly heatmap
+3. Write final submission document
