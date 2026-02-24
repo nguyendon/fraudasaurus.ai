@@ -4,6 +4,22 @@
 
 ---
 
+## Executive Summary
+
+We found **$17.9 million in fraud exposure** hiding in ARFI's existing data -- undetected because no one was querying for it.
+
+**Key findings:**
+- **$13.9M structuring ring** -- 6 accounts making identical $7,980 transfers (just under the $10k CTR threshold), 4-5x per day, for 18+ months
+- **CarMeg SanDiego identified** -- Meg Bannister operating 11 accounts under 6 aliases (LULA ROE, ANNA MARIE, GREGORY HOUSE, etc.) across 3 email variants
+- **$4M dormant account abuse** -- Member #6 dormant in core banking since 2012 but moving $4M through digital channels
+- **Active account takeover attempts** -- brute force attacks, credential stuffing, and suspicious IP patterns across multiple accounts
+
+**Our solution:** A 4-detector pipeline (structuring, account takeover, dormant abuse, multi-identity) that runs against ARFI's existing BigQuery data. Rule-based, auditable, BSA/AML compliant, zero new infrastructure. We built it, ran it, and it flagged 248 alerts across 204 accounts -- catching every fraud pattern on day one.
+
+**The data was always there. It just wasn't being queried.**
+
+---
+
 ## 1. Problem Statement
 
 > **How can ARFI detect and interrupt multi-channel fraud -- including structuring, account takeover, and dormant account abuse -- before funds leave the institution?**
@@ -72,8 +88,6 @@ Transaction memos reference "DEPOSIT AT ATM... JLASTNAME TX", suggesting ATM cas
 
 Note: `mbannister@jackhenry.com` and `mbannister@symitar.com` -- these are CarMeg's accounts (see Finding 2).
 
-![Structuring Timeline](figures/structuring_timeline.png)
-
 ---
 
 ### Finding 2: CarMeg SanDiego = Meg Bannister
@@ -106,8 +120,6 @@ Meg Bannister operates **11 user accounts** registered under various email addre
 - Account creation spans years and continues into January 2026, indicating an ongoing operation
 - Multiple fictional character names (GREGORY HOUSE, ANNA MARIE) used to create plausible-looking but fabricated identities
 
-![CarMeg Account Network](figures/carmeg_network.png)
-
 ---
 
 ### Finding 3: Account Takeover Signals
@@ -135,8 +147,6 @@ Analysis of `login_attempts_fct` (2,144 total login attempts) revealed multiple 
 - **`jessica`**: 6 login attempts, all failures, each from a different IP address. This pattern suggests credential testing from a botnet or distributed attack infrastructure.
 
 - **`wandaa1` / `Wandaa1`** (WANDA ADOMYETZ): Logs in from **25 distinct IP addresses**, including international-looking addresses -- far more IPs than any legitimate user would normally use.
-
-![Login Anomaly Chart](figures/login_anomalies.png)
 
 ---
 
@@ -170,6 +180,27 @@ We decoded the login result codes from `login_results_deref` to classify all 2,1
 | 14 | UnknownIp | Login from unknown IP (NetTeller Cash Mgmt) -- requires investigation |
 
 Result code 4 ("Dormant Account") is especially valuable for detection: any login attempt against a dormant account is inherently suspicious and should trigger an alert.
+
+---
+
+### Pipeline Results
+
+We built and ran the full detection pipeline against ARFI's live data (`python -m src.run_detectors`). Results:
+
+| Metric | Value |
+|---|---|
+| Total alerts generated | 248 |
+| Unique accounts/users flagged | 204 |
+| CRITICAL tier | 2 |
+| HIGH tier | 16 |
+| MEDIUM tier | 181 |
+| LOW tier | 5 |
+
+**What the pipeline caught:**
+- All 6 $7,980 structuring accounts detected with exact transaction counts, amounts, and date ranges
+- CarMeg's shared-IP pattern across `lularoe`, `iloveroe`, `ilovemlms` flagged by multi-identity detector
+- Brute force and IP velocity patterns flagged for `bannowanda1`, `ilovemlms`, `brandygalloway06@yahoo.com`
+- 181 accounts flagged at MEDIUM tier for further review (repeating sub-$10k amounts, daily aggregation anomalies)
 
 ---
 
@@ -311,8 +342,6 @@ Accounts hitting multiple detectors receive compounding scores. Examples from ou
 | `bannowanda1` | Brute force (CRITICAL) + IP velocity (HIGH) | 40 + 25 | **65** |
 | Member #6 | Dormant abuse (CRITICAL) | 40 | **40** |
 
-![Risk Score Heatmap](figures/risk_heatmap.png)
-
 ---
 
 ### Alert Tiers and Recommended Actions
@@ -349,21 +378,6 @@ Run `python -m src.run_detectors` as a scheduled job or event-driven service. Sa
 **Option C: Hybrid (Best of Both)**
 
 Use BigQuery scheduled queries for batch detection (daily). Use a lightweight Python Cloud Function triggered on new login events for real-time account takeover detection. Both feed into the same `fraud_alerts` table and dashboard.
-
----
-
-### Pipeline Results
-
-We built and ran the full detection pipeline against ARFI's live data (`python -m src.run_detectors`). Results:
-
-- **248 total alerts** across 4 detectors
-- **204 unique accounts/users flagged**
-- **Tier distribution:** 2 CRITICAL, 16 HIGH, 181 MEDIUM, 5 LOW
-- All 6 $7,980 structuring accounts detected with exact amounts and date ranges
-- CarMeg's shared-IP pattern across `lularoe`, `iloveroe`, `ilovemlms` flagged by multi-identity detector
-- Brute force and IP velocity patterns flagged for `bannowanda1`, `ilovemlms`, `brandygalloway06@yahoo.com`
-
-Full results output to `output/fraud_alerts.csv` (scored, one row per account) and `output/fraud_alerts_raw.csv` (individual rule hits).
 
 ---
 
