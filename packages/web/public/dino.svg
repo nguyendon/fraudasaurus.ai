@@ -2,14 +2,14 @@
   <style>
     /* T-Rex Jaw Animation */
     .jaw { 
-      animation: chomp 0.4s infinite alternate step-end; 
+      animation: chomp 0.8s infinite alternate step-end; 
       transform-origin: 130px 110px; 
     }
     
     /* Fraudulent Transaction Bits Animation */
-    .bit1 { animation: feed 1.2s linear infinite; }
-    .bit2 { animation: feed 1.2s linear infinite 0.4s; }
-    .bit3 { animation: feed 1.2s linear infinite 0.8s; }
+    .bit1 { animation: feed 2.4s linear infinite; }
+    .bit2 { animation: feed 2.4s linear infinite 0.8s; }
+    .bit3 { animation: feed 2.4s linear infinite 1.6s; }
     
     @keyframes chomp {
       0%, 100% { transform: rotate(0deg); }
@@ -17,10 +17,10 @@
     }
     
     @keyframes feed {
-      0% { transform: translateX(500px); opacity: 1; }
+      0% { transform: translate(500px, 0); opacity: 1; }
       80% { opacity: 1; }
       90% { opacity: 0; }
-      100% { transform: translateX(170px); opacity: 0; }
+      100% { transform: translate(170px, 10px); opacity: 0; }
     }
     
     /* Pixel Font */
@@ -32,8 +32,6 @@
     }
   </style>
 
-  <rect width="500" height="300" fill="#1e1e1e" />
-  
   <rect x="0" y="240" width="500" height="4" fill="#555" />
 
   <g fill="#4CAF50">
@@ -63,20 +61,11 @@
   </g>
 
   <g>
-    <g class="bit1">
-      <rect x="0" y="70" width="10" height="10" fill="#FF3B30" />
-      <rect x="15" y="70" width="10" height="10" fill="#FF3B30" />
-      <text x="0" y="60" class="text">FRAUD</text>
+    <g class="bit1">      <text x="0" y="80" class="text">FRAUD</text>
     </g>
-    <g class="bit2">
-      <rect x="0" y="70" width="10" height="10" fill="#FF3B30" />
-      <rect x="15" y="70" width="10" height="10" fill="#FF3B30" />
-      <text x="0" y="60" class="text">FRAUD</text>
+    <g class="bit2">      <text x="0" y="80" class="text">FRAUD</text>
     </g>
-    <g class="bit3">
-      <rect x="0" y="70" width="10" height="10" fill="#FF3B30" />
-      <rect x="15" y="70" width="10" height="10" fill="#FF3B30" />
-      <text x="0" y="60" class="text">FRAUD</text>
+    <g class="bit3">      <text x="0" y="80" class="text">FRAUD</text>
     </g>
   </g>
 

@@ -1,5 +1,5 @@
 import { ThemeToggle } from "@/components/theme-toggle";
-import { TRex } from "@/components/trex";
+import Image from "next/image";
 
 export default function Home() {
   return (
@@ -11,7 +11,15 @@ export default function Home() {
 
       {/* 8-bit T-Rex SVG */}
       <div className="mb-10">
-        <TRex className="w-36 h-36 sm:w-48 sm:h-48 md:w-56 md:h-56 text-dino-green" />
+        <Image
+          src="/dino.svg"
+          alt="Fraudasaurus"
+          width={400}
+          height={240}
+          className="w-64 h-40 sm:w-80 sm:h-48 md:w-[400px] md:h-60"
+          style={{ imageRendering: "pixelated" }}
+          priority
+        />
       </div>
 
       {/* Title */}
