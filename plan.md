@@ -199,6 +199,45 @@ BigQuery (Banno + Symitar data)
 
 **Why it works on this data:** CarMeg's 11 accounts across 3 email variants with 6+ different names would trigger at CRITICAL on every rule. The cross-account $7,980 transfers between her own accounts would also light up the cross-account money flow rule.
 
+### Detector 5: Money Mule Detection
+
+**What it catches:** Accounts used to launder money — receiving funds and immediately transferring them out, leaving little balance.
+
+**Rules:**
+1. **High velocity funds** — Flag accounts where (total credits / total debits) is between 0.95 and 1.05 over a 30-day period (money comes in and goes right out).
+2. **Low retention** — Flag accounts with high transaction volume (> $10k/month) but average daily balance < $100.
+3. **Rapid flow-through** — Flag when a large deposit (> $1,000) is followed by a withdrawal of > 90% of that amount within 24 hours.
+
+**Thresholds:**
+- Velocity ~1.0 + Volume > $5k → HIGH
+- Rapid flow-through (in/out < 24h) → HIGH
+
+### Detector 6: Elderly Exploitation
+
+**What it catches:** Financial abuse of vulnerable older members.
+
+**Rules:**
+1. **Age + unusual activity** — Join `user_demographic_details_fct` (if available) or approximate age from core data. Flag users > 65 with a sudden spike in wire transfers or P2P payments.
+2. **New beneficiary spike** — Elderly user adds > 2 new transfer recipients in 7 days and sends > $1,000 to them.
+3. **Late night activity** — High-value transfers (> $500) initiated between 1 AM and 5 AM local time by an elderly user.
+
+**Thresholds:**
+- Age > 65 + New large beneficiary → HIGH
+- Age > 75 + Late night high-value transfer → CRITICAL
+
+### Detector 7: Check Kiting (Enhanced)
+
+**What it catches:** Exploiting the "float" time between a check deposit and its clearing.
+
+**Rules:**
+1. **Float exploitation** — Flag accounts that deposit a check and withdraw > 50% of the funds before the check clears (using `DatePosted` vs expected clear date).
+2. **Cycle detection** — Identify circular flows of checks between two or more accounts (Account A checks deposited to B, B checks to A).
+3. **NSF correlation** — High check deposit volume correlated with recent NSF events.
+
+**Thresholds:**
+- Withdrawal against uncleared funds > $1,000 → HIGH
+- Circular check flow detected → CRITICAL
+
 ### Risk Scoring
 
 Each detector produces alerts with a severity. The scoring engine combines them:
@@ -248,6 +287,14 @@ Run `src/detect.py` as a scheduled job or event-driven service. Same rules as SQ
 **Option C: Hybrid (best of both)**
 
 Use BigQuery scheduled queries for batch detection (daily). Use a lightweight Python Cloud Function triggered on new login events for real-time account takeover detection. Both feed into the same `fraud_alerts` table and dashboard.
+
+**Option D: Scalable Streaming Architecture (Future State)**
+
+For high-volume, real-time needs (millions of txns/sec), we propose a streaming architecture:
+- **Ingest:** Kafka / Google PubSub for real-time transaction and login events.
+- **Processing:** Apache Flink or Google Dataflow for stateful stream processing (e.g., calculating rolling windows for velocity checks in real-time).
+- **Storage:** BigQuery (for historical patterns) + Redis (for low-latency feature serving).
+- **Action:** Real-time API calls to block transactions or step-up authentication (MFA).
 
 ### What This Would Have Caught
 
