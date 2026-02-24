@@ -324,12 +324,24 @@ For high-volume, real-time needs (millions of txns/sec), we propose a streaming 
 - [x] `sql/05_find_carmeg.sql` — CarMeg identity and alias queries
 
 ### Fraud detection pipeline
+- [x] `src/bq_loader.py` — parquet caching in `data/raw/`, column-pruned queries, tqdm progress bars
 - [x] `src/detectors/structuring.py` — $7,980 repeat pattern, repeating amounts, daily aggregation
 - [x] `src/detectors/account_takeover.py` — brute force, rapid-fire failures, IP velocity, all-fail users
 - [x] `src/detectors/dormant.py` — dormant core + active digital cross-reference
 - [x] `src/detectors/multi_identity.py` — email clustering, domain variants, creation velocity, shared IPs
 - [x] `src/scoring.py` — combines alerts, sums scores per account (capped at 100), assigns tiers
-- [x] `src/run_detectors.py` — orchestrator: loads data, runs all 4 detectors, scores, outputs `output/fraud_alerts.csv`
+- [x] `src/run_detectors.py` — orchestrator: loads data, runs all 4 detectors, scores, outputs CSV + terminal summary
+
+### Pipeline validated
+- [x] Pipeline runs end-to-end: 248 alerts, 204 unique accounts/users flagged
+- [x] Tier distribution: 2 CRITICAL, 16 HIGH, 181 MEDIUM, 5 LOW
+- [x] All 6 $7,980 structuring accounts detected (score 40 each, MEDIUM tier)
+- [x] CarMeg's shared-IP pattern flagged by multi-identity detector
+- [x] Brute force / IP velocity flagged for bannowanda1, ilovemlms, brandygalloway06
+- [x] Outputs: `output/fraud_alerts.csv` (scored) + `output/fraud_alerts_raw.csv` (raw rule hits)
+
+### Submission document
+- [x] `output/submission.md` — problem statement, findings, proposed solution, pipeline results, impact
 
 ### Findings documented (in this plan)
 - [x] Structuring: $7,980 x 6 accounts = $13.9M
@@ -342,7 +354,11 @@ For high-volume, real-time needs (millions of txns/sec), we propose a streaming 
 
 ## What's Left
 
-- [ ] **Run & validate pipeline** — `python -m src.run_detectors`, verify CarMeg and structuring accounts appear at CRITICAL tier
+### Known issues
+- [ ] **Scoring tier mismatch** — $7,980 structuring accounts score 40 (CRITICAL severity) but land in MEDIUM tier (25-49) because they only trigger one detector. Single-detector CRITICAL alerts should get at least HIGH tier.
+- [ ] **Dormant detector** — needs validation; depends on user_member_associations join quality
+
+### Remaining work
 - [ ] **Visualizations** — `src/generate_viz.py` (structuring timeline, CarMeg network, login anomalies, risk heatmap) → `output/figures/`
-- [ ] **Submission document** — `output/submission.md` (problem statement, findings, proposed solution, impact)
+- [ ] **Fix scoring tiers** — CRITICAL severity alerts should never land below HIGH tier
 - [ ] **Integration test** — end-to-end run producing `fraud_alerts.csv` + all figures
