@@ -32,15 +32,19 @@ export function WantedPoster({ profile }: WantedPosterProps) {
         REWARD: ${profile.totalSuspiciousAmount.toLocaleString()}
       </div>
 
-      {/* Silhouette placeholder */}
+      {/* Boss Photo */}
       <motion.div
-        className="w-32 h-32 sm:w-48 sm:h-48 mx-auto mb-4 bg-[#8b4513]/20 border-4 border-[#8b4513] flex items-center justify-center"
+        className="w-32 h-32 sm:w-48 sm:h-48 mx-auto mb-4 border-4 border-[#8b4513] overflow-hidden"
         initial={{ opacity: 0 }}
         whileInView={{ opacity: 1 }}
         viewport={{ once: true }}
         transition={{ delay: 0.5 }}
       >
-        <span className="text-4xl sm:text-6xl">?</span>
+        <img
+          src="/carmeg.png"
+          alt={profile.name}
+          className="w-full h-full object-cover"
+        />
       </motion.div>
 
       {/* Name */}
