@@ -15,6 +15,70 @@ Fraud detection for the Jack Henry DevCon 2026 Hack-A-Thon.
 | `ip_geo` | 2 tables | MaxMind IP geolocation |
 | `symitar` | 48+ views | Symitar core banking system (Episys) |
 
+## Row Counts
+
+### Banno (Digital Banking)
+
+| Table | Rows |
+|---|---|
+| user_activity_fct | 214,602 |
+| transactions_fct | 195,788 |
+| trx_accounts_fct | 195,788 |
+| accounts_type_fct | 160,737 |
+| bud_enrichments_fct | 33,095 |
+| loan_payment_breakdowns_fct | 6,026 |
+| accounts_fct | 2,594 |
+| login_attempts_fct | 2,144 |
+| transfer_accounts_fct | 1,854 |
+| scheduled_transfers_fct | 1,624 |
+| user_edits_fct | 367 |
+| login_accounts_fct | 336 |
+| users_fct | 336 |
+| payments_fct | 335 |
+| user_bills_fct | 292 |
+| user_member_number_associations_fct | 241 |
+| user_demographic_details_fct | 198 |
+| rdc_deposits_fct | 181 |
+| rdc_accounts_fct | 137 |
+| consumer_uis_ids_fct | 97 |
+| login_results_deref | 15 |
+| moov_transactions_fct | 4 |
+| moov_accounts_fct | 4 |
+| institution_fct | 1 |
+| core_login_details_fct | 0 |
+
+### IP Geo (reference/lookup)
+
+| Table | Rows |
+|---|---|
+| ip_to_city | 8,144,816 |
+| maxmind_ipv4_to_city | 3,532,314 |
+
+### Symitar (Core Banking)
+
+| Table | Rows |
+|---|---|
+| account_v1_raw | 2,888,232 |
+| eft_raw | 570,956 |
+| check_raw | 542,511 |
+| eft_transfer_raw | 259,740 |
+| comment_raw | 165,895 |
+| card_raw | 151,601 |
+| inventory_raw | 137,250 |
+| fmhistory_raw | 106,238 |
+| glaccount_raw | 24,990 |
+| activity_raw | 21,293 |
+| collateral_raw | 18,350 |
+| glhistory_raw | 16,140 |
+| externalloan_raw | 12,240 |
+| agreement_raw | 5,184 |
+| batchachorig_raw | 1,771 |
+| externalaccount_raw | 1,440 |
+| household_raw | 940 |
+| agreement_transaction_raw | 39 |
+| card_access_raw | 0 |
+| check_fmhistory_raw | 0 |
+
 ## Key Tables & Schemas
 
 ### `banno_operation_and_transaction_data.transactions_fct`
