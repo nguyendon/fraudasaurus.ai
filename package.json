@@ -1,0 +1,16 @@
+{
+  "name": "fraudasaurus",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm --filter @fraudasaurus/web dev",
+    "build": "pnpm --filter @fraudasaurus/web build",
+    "start": "pnpm --filter @fraudasaurus/web start",
+    "lint": "pnpm --filter @fraudasaurus/web lint"
+  },
+  "dependencies": {
+    "sst": "^3.19.3"
+  },
+  "engines": {
+    "node": ">=20.9.0"
+  }
+}
