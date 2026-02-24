@@ -28,6 +28,7 @@ We worked with three datasets in BigQuery (project: `jhdevcon2026`):
 
 - **BigQuery SQL** -- all investigative queries run directly against the warehouse
 - **Python** -- pandas for data manipulation, networkx for identity graph analysis
+- **Automated detection pipeline** -- `python -m src.run_detectors` runs 4 detectors against live BigQuery data, scores all alerts, outputs `output/fraud_alerts.csv`
 - **SQL scripts** -- 6 query files targeting specific fraud patterns (`sql/00_reference.sql` through `sql/05_find_carmeg.sql`)
 
 ### Approach
@@ -338,7 +339,7 @@ Run each detector as a scheduled BigQuery query (daily at minimum, hourly if pos
 
 **Option B: Python Service (More Flexible)**
 
-Run `src/detect.py` as a scheduled job or event-driven service. Same rules as SQL, plus:
+Run `python -m src.run_detectors` as a scheduled job or event-driven service. Same rules as SQL, plus:
 
 - Real-time email/Slack alerts
 - Stateful rolling windows and IP history per user
@@ -348,6 +349,21 @@ Run `src/detect.py` as a scheduled job or event-driven service. Same rules as SQ
 **Option C: Hybrid (Best of Both)**
 
 Use BigQuery scheduled queries for batch detection (daily). Use a lightweight Python Cloud Function triggered on new login events for real-time account takeover detection. Both feed into the same `fraud_alerts` table and dashboard.
+
+---
+
+### Pipeline Results
+
+We built and ran the full detection pipeline against ARFI's live data (`python -m src.run_detectors`). Results:
+
+- **248 total alerts** across 4 detectors
+- **204 unique accounts/users flagged**
+- **Tier distribution:** 2 CRITICAL, 16 HIGH, 181 MEDIUM, 5 LOW
+- All 6 $7,980 structuring accounts detected with exact amounts and date ranges
+- CarMeg's shared-IP pattern across `lularoe`, `iloveroe`, `ilovemlms` flagged by multi-identity detector
+- Brute force and IP velocity patterns flagged for `bannowanda1`, `ilovemlms`, `brandygalloway06@yahoo.com`
+
+Full results output to `output/fraud_alerts.csv` (scored, one row per account) and `output/fraud_alerts_raw.csv` (individual rule hits).
 
 ---
 
