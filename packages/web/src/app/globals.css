@@ -1,0 +1,76 @@
+@import "tailwindcss";
+
+:root {
+  --background: #e8d4b8;
+  --foreground: #222034;
+  --primary: #d95763;
+  --secondary: #5b6ee1;
+  --accent: #fbf236;
+  --dino-green: #37946e;
+  --dino-dark: #222034;
+}
+
+.dark {
+  --background: #222034;
+  --foreground: #cbdbfc;
+  --primary: #d95763;
+  --secondary: #5fcde4;
+  --accent: #fbf236;
+  --dino-green: #6abe30;
+  --dino-dark: #141020;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-primary: var(--primary);
+  --color-secondary: var(--secondary);
+  --color-accent: var(--accent);
+  --color-dino-green: var(--dino-green);
+  --color-dino-dark: var(--dino-dark);
+  --font-pixel: var(--font-pixel);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-pixel), monospace;
+  image-rendering: pixelated;
+}
+
+/* 8-bit pixel button style */
+.pixel-btn {
+  background: var(--primary);
+  border: 4px solid var(--foreground);
+  box-shadow: 4px 4px 0 var(--foreground);
+  image-rendering: pixelated;
+  cursor: pointer;
+  transition: transform 0.05s, box-shadow 0.05s;
+}
+
+.pixel-btn:hover {
+  transform: translate(2px, 2px);
+  box-shadow: 2px 2px 0 var(--foreground);
+}
+
+.pixel-btn:active {
+  transform: translate(4px, 4px);
+  box-shadow: 0 0 0 var(--foreground);
+}
+
+/* Pixel art text effect */
+.pixel-text {
+  text-shadow: 4px 4px 0 var(--dino-dark);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+/* Blink animation */
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+.retro-blink {
+  animation: blink 1s steps(1) infinite;
+}
