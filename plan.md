@@ -297,33 +297,152 @@ Use BigQuery scheduled queries for batch detection (daily). Use a lightweight Py
 
 ## What's Left
 
-### 1. Extract data locally
-Run `gcloud auth application-default login`, then `python3 -m src.extract` to pull tables to `data/raw/`. Needed for the detector scripts and notebooks to run against local data.
+Data approach: query BigQuery directly, no local extract needed. All queries return in seconds. Use `google.cloud.bigquery.Client` to get DataFrames, feed them into existing detector modules.
 
-### 2. Run the detection pipeline end-to-end
-Wire up the existing detectors against the extracted data. The modules exist but need to be orchestrated:
-- Load data via `src/ingest.py`
-- Clean via `src/clean.py`
-- Build features via `src/features.py`
-- Run all 4 detectors
-- Score via `src/scoring.py`
-- Output flagged accounts with evidence
+Prerequisite (manual, one-time): run `gcloud auth application-default login` so the Python BigQuery client can authenticate.
 
-### 3. Generate visualizations
-Use `src/visualize.py` and the notebooks to produce:
-- Structuring timeline (the $7,980 pattern over 18 months)
-- CarMeg account network graph (11 accounts, email links, money flows)
-- Login anomaly heatmap (failure rates, IP counts by user)
-- Risk score heatmap across all detectors
+---
 
-### 4. Generate the report
-Use `src/report.py` to produce the HTML submission with:
-- Problem statement
-- Data evidence tables (specific accounts, amounts, dates)
-- Detection methodology
-- Proposed solution architecture
-- Visualizations embedded
-- "What this would have caught" impact table
+### Task A: Write the BigQuery data loader (blocks B, C, D)
 
-### 5. Final submission
-Choose format (text writeup, slides, or video demo) and package everything.
+**File:** `src/bq_loader.py`
+
+Write a module that queries BigQuery and returns pandas DataFrames for each table the detectors need. No local files — just query and return.
+
+Functions needed:
+- `get_client()` — returns authenticated `bigquery.Client`
+- `load_transactions()` — query `banno_operation_and_transaction_data.transactions_fct`, return DataFrame
+- `load_login_attempts()` — query `login_attempts_fct`, return DataFrame
+- `load_users()` — query `users_fct`, return DataFrame
+- `load_user_member_associations()` — query `user_member_number_associations_fct`, return DataFrame
+- `load_accounts()` — query `banno_operation_and_transaction_data.accounts_fct`, return DataFrame
+- `load_scheduled_transfers()` — query `scheduled_transfers_fct`, return DataFrame
+- `load_rdc_deposits()` — query `rdc_deposits_fct`, return DataFrame
+- `load_symitar_accounts()` — query `symitar.account_v1_raw`, return DataFrame
+- `load_symitar_fmhistory()` — query `symitar.fmhistory_raw`, return DataFrame
+- `load_login_results()` — query `login_results_deref`, return DataFrame
+
+All functions should use project `jhdevcon2026` and the full table paths from README.md. Keep it simple — no caching, no pagination, just `client.query(sql).to_dataframe()`.
+
+---
+
+### Task B: Wire up the detection pipeline (blocks E)
+
+**File:** `src/run_detectors.py`
+
+Write an orchestrator script that:
+1. Loads data via `src/bq_loader.py`
+2. Cleans data via `src/clean.py`
+3. Builds features via `src/features.py`
+4. Runs all 4 detectors (`src/detectors/structuring.py`, `account_takeover.py`, `dormant.py`, `kiting.py`)
+5. Scores results via `src/scoring.py`
+6. Outputs a combined DataFrame of flagged accounts with columns: `account_id`, `user_id`, `member_number`, `fraud_type`, `risk_score`, `risk_tier`, `evidence`, `recommended_action`
+7. Saves output to `output/fraud_alerts.csv`
+
+Read each detector module first to understand what DataFrame columns they expect as input. Map the BigQuery column names to what the detectors need (the detectors use `src/clean.py` to normalize column names).
+
+Run with: `python3 -m src.run_detectors`
+
+---
+
+### Task C: Generate visualizations (independent, can run in parallel with B)
+
+**File:** `src/generate_viz.py`
+
+Write a script that queries BigQuery directly and produces these visualizations using `src/visualize.py` and matplotlib/plotly. Save all figures to `output/figures/`.
+
+**C1: Structuring timeline** (`output/figures/structuring_timeline.png`)
+- X-axis: date (April 2024 — present)
+- Y-axis: daily total of $7,980 transactions
+- Color-code by AccountId
+- Show the 6 structuring accounts over time
+- Data: `transactions_fct WHERE ABS(Amount) = 7980`
+
+**C2: CarMeg account network** (`output/figures/carmeg_network.png`)
+- Network graph using networkx
+- Nodes: CarMeg's 11 user accounts (labeled with username + name)
+- Edges: shared emails (same email = edge), money flows between accounts
+- Color nodes by account creation date
+- Data: users_fct WHERE email LIKE '%bannister%', plus transactions between those users
+
+**C3: Login anomaly chart** (`output/figures/login_anomalies.png`)
+- Bar chart: top 15 usernames by failure count
+- Stacked bars showing success vs failure
+- Secondary axis or annotation showing distinct IP count
+- Data: `login_attempts_fct`
+
+**C4: Risk score heatmap** (`output/figures/risk_heatmap.png`)
+- Heatmap: rows = flagged accounts, columns = detector names (structuring, ATO, dormant, kiting)
+- Cell values = risk scores
+- Sort by composite score descending
+- Data: output from Task B (`output/fraud_alerts.csv`), or re-run scoring inline
+- Note: this depends on Task B output, so either run after B or compute scores independently
+
+---
+
+### Task D: Write the submission document (independent, can run in parallel with B and C)
+
+**File:** `output/submission.md`
+
+Write the final hackathon submission as Markdown. Structure:
+
+1. **Problem Statement**
+   - "How can ARFI detect and interrupt multi-channel fraud — including structuring, account takeover, and dormant account abuse — before funds leave the institution?"
+
+2. **The Investigation**
+   - What data we had (Banno digital + Symitar core + IP geo, brief summary)
+   - What tools we used (BigQuery SQL, Python, pandas)
+   - How we approached it (5 parallel analyses)
+
+3. **Findings**
+   - Finding 1: Structuring ($7,980 pattern, 6 accounts, $13.9M, specific account IDs and dates)
+   - Finding 2: CarMeg SanDiego identified (Meg Bannister, 11 accounts, alias table)
+   - Finding 3: Account takeover signals (bannowanda1, ilovemlms, specific login data)
+   - Finding 4: Dormant account abuse (Member #6, Member #34996, specific amounts)
+   - Use the evidence tables from the Findings section of this plan
+
+4. **Proposed Solution: Automated Fraud Detection Pipeline**
+   - Architecture diagram (text-based)
+   - 4 detectors with specific rules and thresholds (from the Proposed Automated Detection System section of this plan)
+   - Risk scoring model
+   - Alert tiers and recommended actions
+   - Implementation options (scheduled SQL, Python service, hybrid)
+
+5. **Impact**
+   - "What this would have caught" table (from this plan)
+   - Estimated prevention: $13.9M structuring + $4M dormant abuse
+
+6. **Why This Is Feasible**
+   - Uses data ARFI already collects
+   - Rule-based = auditable, CISO-friendly, BSA/AML compliant
+   - Can start as scheduled BigQuery queries (zero new infrastructure)
+   - All SQL queries provided and ready to deploy
+
+Reference all specific data from the Findings section of this plan. Include account IDs, dollar amounts, dates, usernames — the judges want to see you actually found things in the data.
+
+---
+
+### Task E: Integration test (runs after B and C)
+
+Run the full pipeline end-to-end:
+1. `python3 -m src.run_detectors` — verify it produces `output/fraud_alerts.csv`
+2. `python3 -m src.generate_viz` — verify it produces all 4 figures in `output/figures/`
+3. Spot-check that CarMeg's accounts appear in the alerts at CRITICAL tier
+4. Spot-check that the $7,980 structuring accounts are flagged
+5. Fix any issues
+
+---
+
+### Dependency graph
+
+```
+Task A (bq_loader) ──┬──> Task B (run detectors) ──> Task E (integration test)
+                     │
+                     └──> Task C (visualizations) ──> Task E
+
+Task D (submission doc) ─────────────────────────────> Task E (embed final results)
+```
+
+Tasks A and D can start immediately in parallel.
+Tasks B and C start after A is done.
+Task E runs last to verify everything works.
