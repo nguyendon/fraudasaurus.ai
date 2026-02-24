@@ -74,3 +74,236 @@ body {
 .retro-blink {
   animation: blink 1s steps(1) infinite;
 }
+
+/* Level Start - text drops in */
+@keyframes level-start {
+  0% {
+    transform: translateY(-100px) scale(2);
+    opacity: 0;
+  }
+  50% {
+    transform: translateY(10px) scale(1.1);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(0) scale(1);
+  }
+}
+
+.level-start {
+  animation: level-start 0.6s ease-out forwards;
+}
+
+/* Level Complete Flash */
+@keyframes level-complete {
+  0%, 100% { background: var(--background); }
+  25% { background: var(--dino-green); }
+  50% { background: var(--accent); }
+  75% { background: var(--dino-green); }
+}
+
+.level-complete {
+  animation: level-complete 0.4s ease-out;
+}
+
+/* Boss Warning Pulse */
+@keyframes boss-warning {
+  0%, 100% {
+    box-shadow: 0 0 20px var(--primary);
+    border-color: var(--primary);
+  }
+  50% {
+    box-shadow: 0 0 60px var(--primary), 0 0 100px var(--primary);
+    border-color: var(--accent);
+  }
+}
+
+.boss-warning {
+  animation: boss-warning 0.5s ease-in-out infinite;
+}
+
+/* Screen Shake for Boss */
+@keyframes screen-shake {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+  20%, 40%, 60%, 80% { transform: translateX(5px); }
+}
+
+.screen-shake {
+  animation: screen-shake 0.5s ease-in-out;
+}
+
+/* Scroll Indicator Float */
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+.float-animation {
+  animation: float 2s ease-in-out infinite;
+}
+
+/* Typewriter Cursor */
+@keyframes cursor-blink {
+  0%, 100% { border-color: var(--foreground); }
+  50% { border-color: transparent; }
+}
+
+.typewriter-cursor {
+  border-right: 4px solid var(--foreground);
+  animation: cursor-blink 1s steps(1) infinite;
+}
+
+/* Glitch effect for boss */
+@keyframes glitch {
+  0% {
+    clip-path: inset(40% 0 61% 0);
+    transform: translate(-2px, 2px);
+  }
+  20% {
+    clip-path: inset(92% 0 1% 0);
+    transform: translate(2px, -2px);
+  }
+  40% {
+    clip-path: inset(43% 0 1% 0);
+    transform: translate(-2px, 2px);
+  }
+  60% {
+    clip-path: inset(25% 0 58% 0);
+    transform: translate(2px, -2px);
+  }
+  80% {
+    clip-path: inset(54% 0 7% 0);
+    transform: translate(-2px, 2px);
+  }
+  100% {
+    clip-path: inset(58% 0 43% 0);
+    transform: translate(2px, -2px);
+  }
+}
+
+.glitch-text {
+  position: relative;
+}
+
+.glitch-text::before,
+.glitch-text::after {
+  content: attr(data-text);
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.glitch-text::before {
+  color: var(--primary);
+  animation: glitch 0.3s infinite;
+  z-index: -1;
+}
+
+.glitch-text::after {
+  color: var(--secondary);
+  animation: glitch 0.3s infinite reverse;
+  z-index: -1;
+}
+
+/* Scanlines effect */
+.scanlines::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(0, 0, 0, 0.1),
+    rgba(0, 0, 0, 0.1) 1px,
+    transparent 1px,
+    transparent 2px
+  );
+  pointer-events: none;
+  z-index: 10;
+}
+
+/* Pixel border box */
+.pixel-border {
+  border: 4px solid var(--foreground);
+  box-shadow:
+    4px 4px 0 var(--foreground),
+    inset 4px 4px 0 rgba(255, 255, 255, 0.1);
+}
+
+/* HP bar style */
+.hp-bar {
+  background: linear-gradient(90deg, var(--primary) 0%, var(--accent) 100%);
+  height: 8px;
+  image-rendering: pixelated;
+}
+
+/* Arcade table styling */
+.arcade-table {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.arcade-table th,
+.arcade-table td {
+  border: 2px solid var(--foreground);
+  padding: 8px 12px;
+}
+
+.arcade-table th {
+  background: var(--primary);
+  color: var(--foreground);
+}
+
+.arcade-table tr:nth-child(even) {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.dark .arcade-table tr:nth-child(even) {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+/* Press Start animation */
+@keyframes press-start {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+.press-start-blink {
+  animation: press-start 1.5s ease-in-out infinite;
+}
+
+/* Wanted poster styling */
+.wanted-poster {
+  background: #f4e4bc;
+  border: 8px solid #8b4513;
+  box-shadow:
+    inset 0 0 20px rgba(139, 69, 19, 0.3),
+    8px 8px 0 rgba(0, 0, 0, 0.3);
+  position: relative;
+}
+
+.wanted-poster::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: url("data:image/svg+xml,%3Csvg viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+  opacity: 0.05;
+  pointer-events: none;
+}
+
+/* Score display */
+.score-display {
+  font-family: var(--font-pixel), monospace;
+  background: var(--dino-dark);
+  color: var(--dino-green);
+  padding: 8px 16px;
+  border: 4px solid var(--dino-green);
+}

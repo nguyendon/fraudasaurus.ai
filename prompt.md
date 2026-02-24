@@ -28,10 +28,7 @@ Your submission must contain:
 
 You may submit the following:
 
-- A text version fully explaining your solution, documenting what tools and processes you took and suggest for ARFI.
-- A powerpoint presentation explaining the problem and solution with or without screen shots.
-- A quick video presentation (less than 3 minutes) demonstrating your solution live.
-- A mix of all 3. Please avoid interpretive dance. Our insurance policy for the venue does not cover this.
+- A web page explaining your solution, documenting what tools and processes you took and suggest for ARFI.
 
 ## Grading Rubric
 
