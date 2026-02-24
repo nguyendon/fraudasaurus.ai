@@ -201,7 +201,7 @@ export function SolutionSection() {
             <div>Don Nguyen</div>
             <div>Alan Bixby</div>
             <div>Kyle Greer</div>
-            <div>Mary Ann Woods</div>
+            <div>Mary Ann Wood</div>
           </div>
         </motion.div>
 
