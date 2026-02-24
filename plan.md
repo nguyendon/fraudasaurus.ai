@@ -312,7 +312,7 @@ For high-volume, real-time needs (millions of txns/sec), we propose a streaming 
 ### Data access & extraction
 - [x] BigQuery access configured (project `jhdevcon2026`, `bq` CLI at `/private/tmp/gcloud/google-cloud-sdk/bin/bq`)
 - [x] `src/extract.py` — pulls BigQuery tables to local parquet (optional, not required for pipeline)
-- [x] `requirements.txt` — all Python dependencies
+- [x] `pyproject.toml` — all Python dependencies (use `uv sync` to install)
 - [x] `README.md` — full data catalog with schemas, row counts, example queries
 
 ### Investigation queries

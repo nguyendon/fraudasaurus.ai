@@ -2,6 +2,40 @@
 
 Fraud detection for the Jack Henry DevCon 2026 Hack-A-Thon.
 
+## Setup
+
+### Python & dependencies
+
+This project uses [uv](https://docs.astral.sh/uv/) to manage Python and dependencies.
+
+```bash
+# Install uv (if not already installed)
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Install Python, create venv, and install all dependencies
+uv sync
+```
+
+### BigQuery access
+
+```bash
+# Authenticate gcloud (one-time)
+gcloud auth application-default login
+
+# Test the connection
+python3 -m src.bq_loader
+```
+
+### Running the pipeline
+
+```bash
+# Run fraud detectors (outputs to output/fraud_alerts.csv)
+python3 -m src.run_detectors
+
+# Generate visualizations (outputs to output/figures/)
+python3 -m src.generate_viz
+```
+
 ## BigQuery Project
 
 - **Project:** `jhdevcon2026`
