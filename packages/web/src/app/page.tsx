@@ -33,8 +33,8 @@ export default function Home() {
       <LevelSection
         level={1}
         title="STRUCTURING"
-        subtitle="BSA/AML Violation Detection"
-        description="Multiple accounts are depositing exactly $7,980 - just under the $10,000 Currency Transaction Report threshold. This pattern indicates deliberate structuring to avoid federal reporting requirements."
+        subtitle="$13.9M BSA/AML Violation Ring"
+        description="Six accounts making identical $7,980 transfers - just under the $10,000 CTR threshold - 4-5 times per day for 18+ months. The clearest fraud signal in the dataset. Transaction memos reference 'DEPOSIT AT ATM... JLASTNAME TX'."
         stats={[
           {
             label: "Accounts",
@@ -43,12 +43,12 @@ export default function Home() {
           },
           {
             label: "Transactions",
-            value: STRUCTURING_STATS.totalTransactions,
+            value: STRUCTURING_STATS.totalTransactions.toLocaleString(),
             color: "secondary",
           },
           {
             label: "Total Amount",
-            value: `$${(STRUCTURING_STATS.totalAmount / 1000).toFixed(0)}K`,
+            value: `$${(STRUCTURING_STATS.totalAmount / 1000000).toFixed(1)}M`,
             color: "accent",
           },
           {
@@ -58,9 +58,9 @@ export default function Home() {
           },
         ]}
         detection={{
-          title: "Detection Method: Threshold Proximity Analysis",
+          title: "Detection Method: Repeating Amount + Daily Aggregation",
           method:
-            "Our STRUCTURING SENTINEL monitors for repeated transactions within 80% of reporting thresholds. When an account shows 3+ transactions in this range within 30 days, it triggers enhanced review. These 6 accounts show a clear pattern of $7,980 deposits - exactly 79.8% of the $10K threshold.",
+            "STRUCTURING SENTINEL flags accounts with 3+ identical amounts ($3K-$9,999) in 7 days, or daily totals exceeding $10K with no single transaction above threshold. These 6 accounts were running since April 2024 - $31,920 to $39,900 per day per account - totaling $13.9M over 18 months.",
         }}
       >
         <ArcadeTable<StructuringAccount>
@@ -88,7 +88,7 @@ export default function Home() {
         level={2}
         title="ACCOUNT TAKEOVER"
         subtitle="Credential Attack Detection"
-        description="Multiple accounts show signs of credential stuffing and brute force attacks. High failure rates combined with multiple source IPs indicate automated attack tools attempting to compromise accounts."
+        description="Analysis of 2,144 login attempts revealed brute force patterns, credential stuffing, and suspicious IP velocity. CarMeg's own account 'ilovemlms' shows 25 failed logins from 5 IPs - managing too many fake identities."
         stats={[
           {
             label: "Suspicious",
@@ -106,15 +106,15 @@ export default function Home() {
             color: "accent",
           },
           {
-            label: "Geo Anomalies",
+            label: "Shared IP Groups",
             value: ACCOUNT_TAKEOVER_STATS.geoAnomalies,
             color: "danger",
           },
         ]}
         detection={{
-          title: "Detection Method: Login Velocity & Geo Analysis",
+          title: "Detection Method: Login Velocity & IP Analysis",
           method:
-            "LOGIN GUARDIAN tracks failed login velocity, unique IP counts per account, and geographic impossibility (traveling faster than physically possible). User 'bannowanda1' shows 59 failed attempts from 12 different IPs - classic credential stuffing. 'jessica_2019' logged in from Texas and Florida within 2 hours - physically impossible travel.",
+            "LOGIN GUARDIAN tracks failed login velocity and unique IP counts. 'bannowanda1' (JAMES EVANS on mposkey@ email - name mismatch!) shows 59 failures from 12 IPs. 'brandygalloway06' hit 14 consecutive failures in 2 minutes - textbook brute force. 'jessica' attempted from 6 different IPs - every attempt from a new source.",
         }}
       >
         <ArcadeTable<AccountTakeoverCase>
@@ -138,8 +138,8 @@ export default function Home() {
       <LevelSection
         level={3}
         title="DORMANT ABUSE"
-        subtitle="Sleeping Account Exploitation"
-        description="Accounts dormant for years in the core banking system suddenly show heavy digital channel activity. This gap between core and digital records indicates potential account compromise or internal fraud."
+        subtitle="$4M Core-Digital Gap Exploit"
+        description="By joining Symitar lastfmdate with Banno transactions, we found accounts appearing dormant in core banking but actively moving money through digital channels. The real owner isn't watching - and neither was the core system."
         stats={[
           {
             label: "Compromised",
@@ -148,7 +148,7 @@ export default function Home() {
           },
           {
             label: "Avg Dormancy",
-            value: `${DORMANT_STATS.avgDormancyYears} yrs`,
+            value: `${DORMANT_STATS.avgDormancyYears}+ yrs`,
             color: "secondary",
           },
           {
@@ -158,14 +158,14 @@ export default function Home() {
           },
           {
             label: "Detection Gap",
-            value: "CRITICAL",
+            value: "12 YEARS",
             color: "accent",
           },
         ]}
         detection={{
           title: "Detection Method: Core vs Digital Activity Correlation",
           method:
-            "DORMANT WATCHER cross-references Symitar core banking lastfmdate with Banno digital activity timestamps. Member #6 had no core activity since 2012 but suddenly moved $4.1M through digital channels in 2024. This 12-year gap between systems is a critical red flag indicating account compromise.",
+            "DORMANT WATCHER joins symitar.account_v1_raw.lastfmdate with banno transactions_fct. Member #6 shows last core activity in October 2012 - over 12 years ago - yet has 3,120 digital transactions totaling $4.09M. This is exactly the kind of account CarMeg targets: abandoned by its owner, unmonitored by the core system.",
         }}
       >
         <ArcadeTable<DormantAccount>

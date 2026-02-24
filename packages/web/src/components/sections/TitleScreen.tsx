@@ -11,12 +11,12 @@ export function TitleScreen() {
       {/* Scanlines overlay */}
       <div className="scanlines fixed inset-0 pointer-events-none" />
 
-      {/* Animated Dino */}
+      {/* Dino */}
       <motion.div
         className="mb-6 sm:mb-10"
-        initial={{ scale: 0, rotate: -180 }}
-        animate={{ scale: 1, rotate: 0 }}
-        transition={{ duration: 0.8, type: "spring", stiffness: 100 }}
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, ease: "easeOut" }}
       >
         <Image
           src="/dino.svg"
@@ -32,9 +32,9 @@ export function TitleScreen() {
       {/* Title */}
       <motion.h1
         className="text-xl sm:text-3xl md:text-4xl lg:text-5xl pixel-text text-primary mb-4 sm:mb-6 text-center"
-        initial={{ opacity: 0, y: 50 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.5, duration: 0.5 }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.2, duration: 0.3 }}
       >
         FRAUDASAURUS
       </motion.h1>
@@ -44,7 +44,7 @@ export function TitleScreen() {
         className="text-[10px] sm:text-sm text-secondary mb-6 sm:mb-8 text-center"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ delay: 0.8 }}
+        transition={{ delay: 0.35, duration: 0.3 }}
       >
         FRAUD DETECTION FOR THE DIGITAL AGE
       </motion.p>
