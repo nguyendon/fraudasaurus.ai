@@ -1,7 +1,6 @@
 "use client";
 
 import { motion } from "framer-motion";
-import Image from "next/image";
 import { PixelCard } from "@/components/ui/PixelCard";
 import { StatBlock } from "@/components/ui/StatBlock";
 import { DETECTORS, RISK_TIERS, SOLUTION_STATS, VICTORY_MESSAGE } from "@/data/fraud-data";
@@ -187,27 +186,23 @@ export function SolutionSection() {
           </pre>
         </motion.div>
 
-        {/* Animated Dino Victory Pose */}
+        {/* Victory Video */}
         <motion.div
           className="flex justify-center mb-8"
-          initial={{ opacity: 0, y: 50 }}
+          initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          transition={{ type: "spring", stiffness: 100 }}
+          transition={{ duration: 0.5 }}
         >
-          <motion.div
-            animate={{ y: [0, -10, 0] }}
-            transition={{ duration: 1, repeat: Infinity, ease: "easeInOut" }}
-          >
-            <Image
-              src="/dino.svg"
-              alt="Victory Fraudasaurus"
-              width={200}
-              height={120}
-              className="w-32 h-20 sm:w-40 sm:h-24"
-              style={{ imageRendering: "pixelated" }}
-            />
-          </motion.div>
+          <video
+            src="/dino_defender.mp4"
+            autoPlay
+            loop
+            muted
+            playsInline
+            className="w-64 sm:w-80 md:w-96 rounded-lg"
+            style={{ imageRendering: "pixelated" }}
+          />
         </motion.div>
 
         {/* Credits */}
