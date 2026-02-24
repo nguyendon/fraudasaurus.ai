@@ -260,18 +260,70 @@ Use BigQuery scheduled queries for batch detection (daily). Use a lightweight Py
 
 ---
 
-## SQL Scripts
+## What's Done
 
-All detection queries saved in `sql/` directory:
-- `sql/00_reference.sql` — Reference lookups
-- `sql/01_structuring_detection.sql` — Structuring pattern queries
-- `sql/02_account_takeover.sql` — Login anomaly queries
-- `sql/03_dormant_account_abuse.sql` — Dormant account queries
-- `sql/04_kiting_nsf.sql` — NSF/kiting queries
-- `sql/05_find_carmeg.sql` — CarMeg identity queries
+### Data access & extraction
+- [x] BigQuery access configured (project `jhdevcon2026`)
+- [x] `src/extract.py` — pulls all BigQuery tables to local parquet
+- [x] `requirements.txt` — all Python dependencies
+- [x] `README.md` — full data catalog with schemas, row counts, example queries
 
-## Next Steps
+### Investigation queries
+- [x] `sql/00_reference.sql` — reference lookups (transaction types, login codes, user-member mapping)
+- [x] `sql/01_structuring_detection.sql` — $7,980 pattern and daily aggregation queries
+- [x] `sql/02_account_takeover.sql` — login anomaly and brute force queries
+- [x] `sql/03_dormant_account_abuse.sql` — dormant core + active digital queries
+- [x] `sql/04_kiting_nsf.sql` — NSF/kiting queries
+- [x] `sql/05_find_carmeg.sql` — CarMeg identity and alias queries
 
-1. Build `src/detect.py` — automated detection script that runs all detectors and outputs scored alerts
-2. Create visualizations — structuring timeline, CarMeg account network graph, login anomaly heatmap
-3. Write final submission document
+### Findings documented
+- [x] Structuring: $7,980 x 6 accounts = $13.9M
+- [x] CarMeg identified: Meg Bannister, 11 accounts, multiple aliases
+- [x] Account takeover signals: bannowanda1, ilovemlms, brandygalloway06
+- [x] Dormant abuse: Member #6 ($4M), Member #34996 ($145k)
+- [x] Detection system design: 4 detectors, risk scoring, alert tiers, implementation options
+
+### Detection pipeline (already implemented, not by us)
+- [x] `src/detectors/structuring.py` — 4 weighted signals (proximity, frequency, split days, round numbers)
+- [x] `src/detectors/account_takeover.py` — profile changes, unusual channels, odd hours, new recipients
+- [x] `src/detectors/dormant.py` — gap detection, reactivation scoring, coordinated reactivation bonus
+- [x] `src/detectors/kiting.py` — NetworkX graph cycle detection with scoring
+- [x] `src/scoring.py` — weighted normalization, tier assignment (LOW/MEDIUM/HIGH/CRITICAL)
+- [x] `src/clean.py` — column normalization, date parsing, amount standardization, dedup
+- [x] `src/features.py` — velocity, amount stats, channel diversity, time patterns, deposit/withdrawal ratio
+- [x] `src/visualize.py` — 6 plot functions (histograms, timelines, heatmaps, network graphs, PCA scatter)
+- [x] `src/report.py` — HTML + Markdown report generation with Jinja2 templates
+- [x] `notebooks/` — 5 Jupyter notebooks (ingestion, EDA, detection, CarMeg hunt, visualization)
+
+## What's Left
+
+### 1. Extract data locally
+Run `gcloud auth application-default login`, then `python3 -m src.extract` to pull tables to `data/raw/`. Needed for the detector scripts and notebooks to run against local data.
+
+### 2. Run the detection pipeline end-to-end
+Wire up the existing detectors against the extracted data. The modules exist but need to be orchestrated:
+- Load data via `src/ingest.py`
+- Clean via `src/clean.py`
+- Build features via `src/features.py`
+- Run all 4 detectors
+- Score via `src/scoring.py`
+- Output flagged accounts with evidence
+
+### 3. Generate visualizations
+Use `src/visualize.py` and the notebooks to produce:
+- Structuring timeline (the $7,980 pattern over 18 months)
+- CarMeg account network graph (11 accounts, email links, money flows)
+- Login anomaly heatmap (failure rates, IP counts by user)
+- Risk score heatmap across all detectors
+
+### 4. Generate the report
+Use `src/report.py` to produce the HTML submission with:
+- Problem statement
+- Data evidence tables (specific accounts, amounts, dates)
+- Detection methodology
+- Proposed solution architecture
+- Visualizations embedded
+- "What this would have caught" impact table
+
+### 5. Final submission
+Choose format (text writeup, slides, or video demo) and package everything.
