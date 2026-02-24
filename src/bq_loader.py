@@ -26,56 +26,56 @@ def load_transactions() -> pd.DataFrame:
     """Load all rows from transactions_fct."""
     client = get_client()
     sql = "SELECT * FROM `jhdevcon2026.banno_operation_and_transaction_data.transactions_fct`"
-    return client.query(sql).to_dataframe()
+    return client.query(sql).to_dataframe(progress_bar_type="tqdm")
 
 
 def load_login_attempts() -> pd.DataFrame:
     """Load all rows from login_attempts_fct."""
     client = get_client()
     sql = "SELECT * FROM `jhdevcon2026.banno_operation_and_transaction_data.login_attempts_fct`"
-    return client.query(sql).to_dataframe()
+    return client.query(sql).to_dataframe(progress_bar_type="tqdm")
 
 
 def load_users() -> pd.DataFrame:
     """Load all rows from users_fct."""
     client = get_client()
     sql = "SELECT * FROM `jhdevcon2026.banno_operation_and_transaction_data.users_fct`"
-    return client.query(sql).to_dataframe()
+    return client.query(sql).to_dataframe(progress_bar_type="tqdm")
 
 
 def load_user_member_associations() -> pd.DataFrame:
     """Load all rows from user_member_number_associations_fct."""
     client = get_client()
     sql = "SELECT * FROM `jhdevcon2026.banno_operation_and_transaction_data.user_member_number_associations_fct`"
-    return client.query(sql).to_dataframe()
+    return client.query(sql).to_dataframe(progress_bar_type="tqdm")
 
 
 def load_scheduled_transfers() -> pd.DataFrame:
     """Load all rows from scheduled_transfers_fct."""
     client = get_client()
     sql = "SELECT * FROM `jhdevcon2026.banno_operation_and_transaction_data.scheduled_transfers_fct`"
-    return client.query(sql).to_dataframe()
+    return client.query(sql).to_dataframe(progress_bar_type="tqdm")
 
 
 def load_rdc_deposits() -> pd.DataFrame:
     """Load all rows from rdc_deposits_fct (remote deposit capture)."""
     client = get_client()
     sql = "SELECT * FROM `jhdevcon2026.banno_operation_and_transaction_data.rdc_deposits_fct`"
-    return client.query(sql).to_dataframe()
+    return client.query(sql).to_dataframe(progress_bar_type="tqdm")
 
 
 def load_user_edits() -> pd.DataFrame:
     """Load all rows from user_edits_fct."""
     client = get_client()
     sql = "SELECT * FROM `jhdevcon2026.banno_operation_and_transaction_data.user_edits_fct`"
-    return client.query(sql).to_dataframe()
+    return client.query(sql).to_dataframe(progress_bar_type="tqdm")
 
 
 def load_login_results() -> pd.DataFrame:
     """Load all rows from login_results_deref."""
     client = get_client()
     sql = "SELECT * FROM `jhdevcon2026.banno_operation_and_transaction_data.login_results_deref`"
-    return client.query(sql).to_dataframe()
+    return client.query(sql).to_dataframe(progress_bar_type="tqdm")
 
 
 # ---------------------------------------------------------------------------
@@ -86,7 +86,7 @@ def load_symitar_accounts() -> pd.DataFrame:
     """Load all rows from symitar account_v1_raw."""
     client = get_client()
     sql = "SELECT * FROM `jhdevcon2026.symitar.account_v1_raw`"
-    return client.query(sql).to_dataframe()
+    return client.query(sql).to_dataframe(progress_bar_type="tqdm")
 
 
 # ---------------------------------------------------------------------------
@@ -96,7 +96,7 @@ def load_symitar_accounts() -> pd.DataFrame:
 def run_query(sql: str) -> pd.DataFrame:
     """Run an arbitrary SQL string and return the result as a DataFrame."""
     client = get_client()
-    return client.query(sql).to_dataframe()
+    return client.query(sql).to_dataframe(progress_bar_type="tqdm")
 
 
 # ---------------------------------------------------------------------------
