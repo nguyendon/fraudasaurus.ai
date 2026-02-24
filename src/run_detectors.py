@@ -5,6 +5,8 @@ from __future__ import annotations
 import logging
 from pathlib import Path
 
+import pandas as pd
+
 from src import bq_loader
 from src.detectors import structuring, account_takeover, dormant, multi_identity
 from src.scoring import score_alerts
@@ -82,12 +84,20 @@ def main():
     results.to_csv(out_path, index=False)
     logger.info("Saved %d scored accounts to %s", len(results), out_path)
 
+    # Also save raw alerts (pre-scoring) for debugging
+    raw_path = OUTPUT_DIR / "fraud_alerts_raw.csv"
+    pd.DataFrame(all_alerts).to_csv(raw_path, index=False)
+    logger.info("Saved %d raw alerts to %s", len(all_alerts), raw_path)
+
     # Print summary
     print("\n" + "=" * 70)
     print("FRAUD DETECTION RESULTS")
     print("=" * 70)
     print(f"\nTotal alerts: {len(all_alerts)}")
     print(f"Unique accounts/users flagged: {len(results)}")
+    print(f"\nOutputs:")
+    print(f"  {out_path}   (scored, one row per account)")
+    print(f"  {raw_path}  (raw alerts, one row per rule hit)")
 
     if not results.empty:
         print(f"\nTier distribution:")
@@ -96,19 +106,16 @@ def main():
             if count:
                 print(f"  {tier}: {count}")
 
-        print(f"\nTop 10 highest risk:")
-        print("-" * 70)
-        top = results.head(10)
+        print(f"\nTop 15 highest risk:")
+        print("-" * 90)
+        top = results.head(15)
         for _, row in top.iterrows():
             label = row["user_id"] or row["account_id"] or row["member_number"]
-            print(f"  [{row['tier']:8s}] Score {row['composite_score']:3.0f} | {label}")
-            print(f"           Types: {row['fraud_types']}")
-            # Truncate evidence for display
-            ev = row["evidence_summary"]
-            if len(ev) > 120:
-                ev = ev[:120] + "..."
-            print(f"           {ev}")
-            print()
+            print(f"\n  [{row['tier']:8s}] Score {row['composite_score']:3.0f} | {label}")
+            print(f"  Types: {row['fraud_types']}")
+            # Show each evidence item on its own line, no truncation
+            for piece in row["evidence_summary"].split(" | "):
+                print(f"    - {piece}")
 
 
 if __name__ == "__main__":
