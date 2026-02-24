@@ -326,3 +326,5 @@ GROUP BY AccountId, DatePosted
 HAVING txn_count > 2 AND daily_total > 10000
 ORDER BY daily_total DESC LIMIT 20;
 ```
+
+***IMPORTANT***: AI agents and run any commands that are read only like python commands or bq commands.
