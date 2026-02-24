@@ -31,6 +31,7 @@ export default function Home() {
 
       {/* Level 1: Structuring */}
       <LevelSection
+        id="level-1"
         level={1}
         title="STRUCTURING"
         subtitle="$13.9M BSA/AML Violation Ring"

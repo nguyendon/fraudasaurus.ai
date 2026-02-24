@@ -51,10 +51,11 @@ export function TitleScreen() {
 
       {/* Press Start */}
       <motion.div
-        className="pixel-btn px-6 sm:px-8 py-3 sm:py-4 mb-8 sm:mb-12"
+        className="pixel-btn px-6 sm:px-8 py-3 sm:py-4 mb-8 sm:mb-12 cursor-pointer"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 1 }}
+        onClick={() => document.getElementById("level-1")?.scrollIntoView({ behavior: "smooth" })}
       >
         <span className="text-foreground text-[10px] sm:text-sm press-start-blink">
           SCROLL TO START
@@ -100,7 +101,7 @@ export function TitleScreen() {
         <div className="w-3 h-3 sm:w-4 sm:h-4 bg-accent" />
       </motion.div>
 
-      <ScrollIndicator text="BEGIN INVESTIGATION" />
+      <ScrollIndicator text="BEGIN INVESTIGATION" targetId="level-1" />
     </section>
   );
 }

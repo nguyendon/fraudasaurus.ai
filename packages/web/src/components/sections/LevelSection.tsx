@@ -21,6 +21,7 @@ interface LevelSectionProps {
     title: string;
     method: string;
   };
+  id?: string;
 }
 
 export function LevelSection({
@@ -31,9 +32,10 @@ export function LevelSection({
   stats,
   children,
   detection,
+  id,
 }: LevelSectionProps) {
   return (
-    <section className="min-h-screen py-12 sm:py-20 px-4 sm:px-8">
+    <section id={id} className="min-h-screen py-12 sm:py-20 px-4 sm:px-8">
       <div className="max-w-5xl mx-auto">
         {/* Level Banner */}
         <LevelBanner level={level} title={title} subtitle={subtitle} />

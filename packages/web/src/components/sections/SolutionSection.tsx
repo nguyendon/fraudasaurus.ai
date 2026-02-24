@@ -186,6 +186,25 @@ export function SolutionSection() {
           </pre>
         </motion.div>
 
+        {/* Team Credits */}
+        <motion.div
+          className="text-center mb-8"
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          viewport={{ once: true }}
+        >
+          <div className="text-[10px] sm:text-xs text-secondary mb-3 uppercase">
+            Created By
+          </div>
+          <div className="text-xs sm:text-sm text-foreground/80 space-y-1">
+            <div>Dylan Martinez</div>
+            <div>Don Nguyen</div>
+            <div>Alan Bixby</div>
+            <div>Kyle Greer</div>
+            <div>Mary Ann Woods</div>
+          </div>
+        </motion.div>
+
         {/* Victory Video */}
         <motion.div
           className="flex justify-center mb-8"
