@@ -310,8 +310,8 @@ For high-volume, real-time needs (millions of txns/sec), we propose a streaming 
 ## What's Done (on `main`)
 
 ### Data access & extraction
-- [x] BigQuery access configured (project `jhdevcon2026`, `bq` CLI at `/private/tmp/gcloud/google-cloud-sdk/bin/bq`)
-- [x] `src/extract.py` — pulls BigQuery tables to local parquet (optional, not required for pipeline)
+- [x] BigQuery access configured (project `jhdevcon2026`)
+- [x] `src/bq_loader.py` — queries BigQuery directly, returns DataFrames (with tqdm progress bars)
 - [x] `pyproject.toml` — all Python dependencies (use `uv sync` to install)
 - [x] `README.md` — full data catalog with schemas, row counts, example queries
 
@@ -323,6 +323,14 @@ For high-volume, real-time needs (millions of txns/sec), we propose a streaming 
 - [x] `sql/04_kiting_nsf.sql` — NSF/kiting queries
 - [x] `sql/05_find_carmeg.sql` — CarMeg identity and alias queries
 
+### Fraud detection pipeline
+- [x] `src/detectors/structuring.py` — $7,980 repeat pattern, repeating amounts, daily aggregation
+- [x] `src/detectors/account_takeover.py` — brute force, rapid-fire failures, IP velocity, all-fail users
+- [x] `src/detectors/dormant.py` — dormant core + active digital cross-reference
+- [x] `src/detectors/multi_identity.py` — email clustering, domain variants, creation velocity, shared IPs
+- [x] `src/scoring.py` — combines alerts, sums scores per account (capped at 100), assigns tiers
+- [x] `src/run_detectors.py` — orchestrator: loads data, runs all 4 detectors, scores, outputs `output/fraud_alerts.csv`
+
 ### Findings documented (in this plan)
 - [x] Structuring: $7,980 x 6 accounts = $13.9M
 - [x] CarMeg identified: Meg Bannister, 11 accounts, multiple aliases
@@ -330,184 +338,11 @@ For high-volume, real-time needs (millions of txns/sec), we propose a streaming 
 - [x] Dormant abuse: Member #6 ($4M), Member #34996 ($145k)
 - [x] Detection system design: 4 detectors, risk scoring, alert tiers, implementation options
 
-### NOT on main (was on a different branch, not merged)
-The following files were created by another agent on a separate branch but are **not available on main**. They had column mapping issues with the actual BigQuery data anyway, so we're building fresh:
-- ~~`src/detectors/*.py`~~ — structuring, account_takeover, dormant, kiting detectors
-- ~~`src/scoring.py`, `src/clean.py`, `src/features.py`, `src/visualize.py`, `src/report.py`, `src/ingest.py`~~
-- ~~`notebooks/`~~ — 5 Jupyter notebooks
-
 ---
 
 ## What's Left
 
-Data approach: query BigQuery directly, no local extract needed. All queries return in seconds. Use `google.cloud.bigquery.Client` to get DataFrames.
-
-Prerequisite (manual, one-time): run `gcloud auth application-default login` so the Python BigQuery client can authenticate.
-
-Since the detector pipeline from the other branch is not on main and had compatibility issues with the actual BigQuery column names (e.g., `AccountId` not `account_id`, `DatePosted` not `transaction_date`, ATO detector expected columns that don't exist, dormant detector needed cross-table join), we're writing all pipeline code fresh — designed directly against the real BigQuery schemas documented in README.md.
-
----
-
-### Task A: Write the BigQuery data loader
-
-**File:** `src/bq_loader.py`
-
-Write a module that queries BigQuery and returns pandas DataFrames. No local files — just query and return.
-
-Functions needed:
-- `get_client()` — returns authenticated `bigquery.Client(project="jhdevcon2026")`
-- `load_transactions()` — query `banno_operation_and_transaction_data.transactions_fct`
-- `load_login_attempts()` — query `banno_operation_and_transaction_data.login_attempts_fct`
-- `load_users()` — query `banno_operation_and_transaction_data.users_fct`
-- `load_user_member_associations()` — query `banno_operation_and_transaction_data.user_member_number_associations_fct`
-- `load_scheduled_transfers()` — query `banno_operation_and_transaction_data.scheduled_transfers_fct`
-- `load_rdc_deposits()` — query `banno_operation_and_transaction_data.rdc_deposits_fct`
-- `load_user_edits()` — query `banno_operation_and_transaction_data.user_edits_fct`
-- `load_symitar_accounts()` — query `symitar.account_v1_raw`
-- `load_login_results()` — query `banno_operation_and_transaction_data.login_results_deref`
-- `run_query(sql)` — run arbitrary SQL, return DataFrame (for ad-hoc use)
-
-Keep it simple — `client.query(sql).to_dataframe()`. Use the actual BigQuery column names as-is (no renaming).
-
----
-
-### Task B: Write the fraud detectors (blocks D, E)
-
-**Files:** `src/detectors/__init__.py`, `src/detectors/structuring.py`, `src/detectors/account_takeover.py`, `src/detectors/dormant.py`, `src/detectors/multi_identity.py`
-
-Write 4 detector modules from scratch, designed against the **actual BigQuery column names** from README.md. Each detector takes DataFrames from `bq_loader` and returns a list of alerts.
-
-**Alert format** (consistent across all detectors):
-```python
-{
-    "account_id": str,       # AccountId from transactions or account number
-    "user_id": str,          # UserId if available
-    "member_number": str,    # member_number if available
-    "fraud_type": str,       # "structuring" | "account_takeover" | "dormant_abuse" | "multi_identity"
-    "severity": str,         # "CRITICAL" | "HIGH" | "MEDIUM" | "LOW"
-    "score": int,            # 0-100
-    "evidence": str,         # human-readable description of what was found
-}
-```
-
-**Structuring detector** — uses `transactions_fct` DataFrame:
-- Columns available: `AccountId`, `DatePosted`, `Amount`, `BannoType`, `CleanMemo`, `Memo`, `UserId`, `RunningBalance`
-- Rule 1: Flag accounts with 3+ transactions of the same amount ($3k-$9,999) in a 7-day window
-- Rule 2: Flag accounts where daily sum > $10k but no single txn > $10k
-- Rule 3: Flag the specific $7,980 repeat pattern (our strongest finding)
-- Score based on frequency and total amount moved
-
-**Account takeover detector** — uses `login_attempts_fct` + `login_results_deref` + `user_edits_fct` DataFrames:
-- Login columns: `username`, `result_id`, `attempted_at`, `client_ip`
-- Rule 1: Failure rate > 50% in 24h window
-- Rule 2: > 5 consecutive failures
-- Rule 3: > 3 distinct IPs in 7 days
-- Rule 4: Profile edits (`user_edits_fct`) within 1 hour of login from new IP
-- Score based on failure rate, IP diversity, behavioral changes
-
-**Dormant account detector** — uses `symitar.account_v1_raw` + `transactions_fct` DataFrames:
-- Symitar columns: `number` (account #), `lastfmdate`, `memberstatus`, `opendate`
-- Rule 1: `lastfmdate` > 12 months ago but Banno transactions exist in last 90 days (cross-table join on member_number)
-- Rule 2: `lastfmdate` > 5 years ago + digital activity > $1,000 → CRITICAL
-- Score based on dormancy duration and digital transaction volume
-
-**Multi-identity detector** — uses `users_fct` + `user_member_number_associations_fct` + `login_attempts_fct` DataFrames:
-- User columns: `user_id`, `primary_institution_username`, `first_name`, `last_name`, `email`, `user_added_dt`, `user_active`
-- Rule 1: Same email base across > 2 user accounts with different names
-- Rule 2: > 3 accounts created from same email in 12 months
-- Rule 3: Multiple usernames logging in from same IP within 30 minutes
-- Score based on number of identities and cross-account activity
-
----
-
-### Task C: Write the orchestrator and scoring (blocks E)
-
-**Files:** `src/run_detectors.py`, `src/scoring.py`
-
-**`src/scoring.py`:**
-- Takes list of alerts from all detectors
-- Combines per-account: sum scores, cap at 100
-- Assigns tier: CRITICAL (80-100), HIGH (50-79), MEDIUM (25-49), LOW (1-24)
-- Deduplicates (same account flagged by multiple detectors gets one row with combined score)
-
-**`src/run_detectors.py`:**
-- Loads data via `src/bq_loader.py`
-- Runs all 4 detectors
-- Scores and tiers results via `src/scoring.py`
-- Outputs combined DataFrame, saves to `output/fraud_alerts.csv`
-- Prints summary to stdout (top 10 accounts, score distribution)
-- Run with: `python3 -m src.run_detectors`
-
----
-
-### Task D: Generate visualizations (runs after B/C)
-
-**File:** `src/generate_viz.py`
-
-Write a standalone script that queries BigQuery and produces figures. Save to `output/figures/`.
-
-**D1: Structuring timeline** (`structuring_timeline.png`)
-- X: date (April 2024 — present), Y: daily count of $7,980 transactions
-- Color by AccountId, show 6 structuring accounts
-- Data: `transactions_fct WHERE ABS(Amount) = 7980`
-
-**D2: CarMeg account network** (`carmeg_network.png`)
-- NetworkX graph: nodes = CarMeg's user accounts (labeled username + name)
-- Edges = shared emails, money flows between accounts
-- Color nodes by creation date
-- Data: `users_fct WHERE email LIKE '%bannister%'`
-
-**D3: Login anomaly chart** (`login_anomalies.png`)
-- Bar chart: top 15 usernames by failure count
-- Stacked success vs failure bars
-- Annotate distinct IP count
-- Data: `login_attempts_fct`
-
-**D4: Risk score heatmap** (`risk_heatmap.png`)
-- Rows = flagged accounts, columns = fraud types
-- Cell values = risk scores from `output/fraud_alerts.csv`
-- Sort by composite score descending
-
----
-
-### Task E: Write the submission document (can start early, finalize after D)
-
-**File:** `output/submission.md`
-
-Write the final hackathon submission. Structure:
-
-1. **Problem Statement** — "How can ARFI detect and interrupt multi-channel fraud before funds leave?"
-2. **The Investigation** — data sources, tools, approach (5 parallel analyses)
-3. **Findings** — all 4 findings with specific evidence (account IDs, amounts, dates, usernames from this plan)
-4. **Proposed Solution** — architecture, 4 detectors, rules, risk scoring, alert tiers, implementation options
-5. **Impact** — "what this would have caught" table, $13.9M structuring + $4M dormant
-6. **Why It's Feasible** — uses existing data, rule-based, auditable, zero new infrastructure
-
-Reference all specific data from the Findings section above. Embed figures from Task D.
-
----
-
-### Task F: Integration test (runs last)
-
-1. `python3 -m src.run_detectors` — produces `output/fraud_alerts.csv`
-2. `python3 -m src.generate_viz` — produces all 4 figures
-3. Verify CarMeg's accounts appear at CRITICAL tier
-4. Verify $7,980 structuring accounts are flagged
-5. Fix any issues
-
----
-
-### Dependency graph
-
-```
-Task A (bq_loader) ──> Task B (detectors) ──> Task C (orchestrator + scoring) ──> Task F (integration test)
-                                                       │
-                                                       └──> Task D (visualizations) ──> Task F
-
-Task E (submission doc) ── can start early, finalize after D ──> Task F
-```
-
-Tasks A and E can start immediately in parallel.
-Task B starts after A.
-Tasks C and D start after B.
-Task F runs last to verify everything works.
+- [ ] **Run & validate pipeline** — `python -m src.run_detectors`, verify CarMeg and structuring accounts appear at CRITICAL tier
+- [ ] **Visualizations** — `src/generate_viz.py` (structuring timeline, CarMeg network, login anomalies, risk heatmap) → `output/figures/`
+- [ ] **Submission document** — `output/submission.md` (problem statement, findings, proposed solution, impact)
+- [ ] **Integration test** — end-to-end run producing `fraud_alerts.csv` + all figures
