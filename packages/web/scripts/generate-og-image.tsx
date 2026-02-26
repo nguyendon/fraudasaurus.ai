@@ -1,21 +1,16 @@
 import { ImageResponse } from "next/og";
+import { writeFile, readFile } from "fs/promises";
+import { fileURLToPath } from "url";
+import { dirname, join } from "path";
 
-export const runtime = "edge";
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
-export const alt = "Fraudasaurus - Fraud Detection for the Digital Age";
-export const size = {
-  width: 1200,
-  height: 630,
-};
-export const contentType = "image/png";
+async function generateOgImage() {
+  // Load the font
+  const fontPath = join(__dirname, "../src/app/PressStart2P-Regular.ttf");
+  const pressStart2P = await readFile(fontPath);
 
-export default async function Image() {
-  // Load Press Start 2P font (TTF format required for OG images)
-  const pressStart2P = await fetch(
-    "https://github.com/google/fonts/raw/main/ofl/pressstart2p/PressStart2P-Regular.ttf"
-  ).then((res) => res.arrayBuffer());
-
-  return new ImageResponse(
+  const image = new ImageResponse(
     (
       <div
         style={{
@@ -217,7 +212,8 @@ export default async function Image() {
       </div>
     ),
     {
-      ...size,
+      width: 1200,
+      height: 630,
       fonts: [
         {
           name: "Press Start 2P",
@@ -228,4 +224,12 @@ export default async function Image() {
       ],
     }
   );
+
+  // Convert to buffer and save
+  const buffer = Buffer.from(await image.arrayBuffer());
+  const outputPath = join(__dirname, "../public/og-image.png");
+  await writeFile(outputPath, buffer);
+  console.log(`Generated OG image at: ${outputPath}`);
 }
+
+generateOgImage().catch(console.error);

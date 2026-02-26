@@ -10,6 +10,7 @@ const pressStart = Press_Start_2P({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://fraudasaurus.ai"),
   title: "Fraudasaurus",
   description: "Fraud detection for the digital age",
   manifest: "/manifest.webmanifest",
@@ -22,11 +23,20 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Fraudasaurus",
     description: "Fraud detection for the digital age",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "Fraudasaurus - Fraud Detection for the Digital Age",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "Fraudasaurus",
     description: "Fraud detection for the digital age",
+    images: ["/og-image.png"],
   },
 };
 
