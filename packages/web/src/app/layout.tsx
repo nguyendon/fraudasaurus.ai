@@ -11,7 +11,23 @@ const pressStart = Press_Start_2P({
 
 export const metadata: Metadata = {
   title: "Fraudasaurus",
-  description: "Hunting fraud in the digital age",
+  description: "Fraud detection for the digital age",
+  manifest: "/manifest.webmanifest",
+  themeColor: "#222034",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "Fraudasaurus",
+  },
+  openGraph: {
+    title: "Fraudasaurus",
+    description: "Fraud detection for the digital age",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Fraudasaurus",
+    description: "Fraud detection for the digital age",
+  },
 };
 
 export default function RootLayout({
